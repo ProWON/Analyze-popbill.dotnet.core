@@ -12,9 +12,12 @@ namespace Popbill.Taxinvoice
         BUY,
         TRUSTEE
     }
-
+    //TaxinvoiceService : BaseService ": BaseService를 사용하여 BaseService 상속"
     public class TaxinvoiceService : BaseService
     {
+        //base() 부모클래스 생성자를 호출 TaxinvoiceService로 들어온 파라미터 명을 base에 사용 가능
+        //자식 인스턴스 생성될때 부모인스턴스 생성 하지만 자식따로 부모따로로 생각하면 안됨
+        //Taxinvoice 인스턴스 생성전 부모 인스턴스 생성됨 둘은 하나임 이렇게 생각하는게 좋을듯
         public TaxinvoiceService(string LinkID, string SecretKey) : base(LinkID, SecretKey)
         {
             this.AddScope("110");
