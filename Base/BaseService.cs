@@ -68,6 +68,7 @@ namespace Popbill
 
         public BaseService(string LinkID, string SecretKey, bool ProxyYN, string ProxyAddress, string ProxyUserName, string ProxyPassword)
         {
+            //서비스 instance 생성할때 linkhub Authority instance 생성
             _LinkhubAuth = new Authority(LinkID, SecretKey, ProxyYN, ProxyAddress, ProxyUserName, ProxyPassword);
             _Scopes.Add("member");
             _IPRestrictOnOff = true;
@@ -103,7 +104,9 @@ namespace Popbill
 
         protected string toJsonString(Object graph)
         {
-            using (MemoryStream ms = new MemoryStream())
+            //개체의 범위를 정의할때 사용. 범위를 벗어나면 자동으로 Dispose
+            //using은 개체의 메서드를 호출하는 동안 예외가 발생하는 경우에도 Dispose가 되도록함
+            using (MemoryStream ms = new MemoryStream()) //MemoryStream을 사용후 자동으로 dispose(처분)함
             {
                 DataContractJsonSerializer ser = new DataContractJsonSerializer(graph.GetType());
                 ser.WriteObject(ms, graph);
@@ -113,7 +116,11 @@ namespace Popbill
         }
 
         protected T fromJson<T>(Stream jsonStream)
-        {
+        {   
+            //Json 형식의 문서 스트림을 읽고 객체로 역직렬화
+            //걍 스트림 파라미터로 받아서 객체로 변환해 준다고 생각하라
+            //스트림은 데이터 읽고쓸대 필요한 중간 매게체 
+            //스트림생성후 이용해서 데이트 쓰고, 읽고
             DataContractJsonSerializer ser = new DataContractJsonSerializer(typeof(T));
             return (T) ser.ReadObject(jsonStream);
         }
@@ -123,16 +130,20 @@ namespace Popbill
         {
             Token _token = null;
 
+            //_tokenTable(Ditionary)에서 지정한 키가 포함되어 있는지 확인
             if (_tokenTable.ContainsKey(CorpNum)) _token = _tokenTable[CorpNum];
 
             bool expired = true;
 
+            //기존에 발급받은 토큰 있는지 없는지 확인
             if (_token != null)
             {
+                //getTime으로 현재 시간을 가지고 오고
                 DateTime now = DateTime.Parse(_LinkhubAuth.getTime(UseStaticIP, UseLocalTimeYN));
-
+                //토큰 만료시간 get
                 DateTime expiration = DateTime.Parse(_token.expiration);
 
+                //만료시간 지났으면 expired true
                 expired = expiration < now;
             }
 
@@ -142,6 +153,7 @@ namespace Popbill
                 {
                     if (_IPRestrictOnOff)
                     {
+                        //토큰 발급
                         _token = _LinkhubAuth.getToken(ServiceID, CorpNum, _Scopes, null, UseStaticIP, UseLocalTimeYN);
                     }
                     else
@@ -167,7 +179,7 @@ namespace Popbill
         }
 
         #region http
-
+        //제네릭타입
         protected T httpget<T>(string url, string CorpNum, string UserID = null)
         {
             HttpWebRequest request = (HttpWebRequest) WebRequest.Create(ServiceURL + url);
@@ -229,6 +241,7 @@ namespace Popbill
         protected T httppost<T>(string url, string CorpNum, string PostData, string httpMethod = null,
             string contentsType = null, string UserID = null)
         {
+            //request 인스턴스 생성
             HttpWebRequest request = (HttpWebRequest) WebRequest.Create(ServiceURL + url);
 
             if (this._ProxyYN == true)
@@ -240,7 +253,7 @@ namespace Popbill
                 proxyRequest.Credentials = new NetworkCredential(this._ProxyUserName, this._ProxyPassword);
                 request.Proxy = proxyRequest;
             }
-
+            //contentsType null 일때 요청 contentType은 application/json
             if (contentsType == null)
             {
                 request.ContentType = "application/json;";
@@ -253,6 +266,7 @@ namespace Popbill
 
             if (string.IsNullOrEmpty(CorpNum) == false)
             {
+                //토큰 생성 및 세션토큰 값 가져오기
                 string bearerToken = getSession_Token(CorpNum);
                 request.Headers.Add("Authorization", "Bearer" + " " + bearerToken);
             }
@@ -260,7 +274,7 @@ namespace Popbill
             request.Headers.Add("x-lh-version", APIVersion);
 
             request.Headers.Add("Accept-Encoding", "gzip, deflate");
-
+            //응답받은 데이터 압축되어 있을때 압축을 풀어줌
             request.AutomaticDecompression = DecompressionMethods.GZip;
 
             if (string.IsNullOrEmpty(UserID) == false)
@@ -287,6 +301,8 @@ namespace Popbill
             {
                 using (HttpWebResponse response = (HttpWebResponse) request.GetResponse())
                 {
+                    //Stream은 추상클래스로 객체 생성 불가 FileStrema, BufferedStream, MemoryStream 등등 상속 받은 클래스 사용
+                  
                     using (Stream stReadData = response.GetResponseStream())
                     {
                         return fromJson<T>(stReadData);

@@ -64,15 +64,19 @@ namespace Popbill.Taxinvoice
             string UserID = null)
         {
             if (taxinvoice == null) throw new PopbillException(-99999999, "세금계산서 정보가 입력되지 않았습니다.");
-
+            //파라미터로 받은 WriteSpecification, ForceIssue, DealinvoiceMgtKey, Momo, EmailSubject 모두 Taxinovice 인스턴스에 추가
             taxinvoice.writeSpecification = WriteSpecification;
             taxinvoice.forceIssue = ForceIssue;
             taxinvoice.dealInvoiceMgtKey = DealinvoiceMgtKey;
             taxinvoice.memo = Memo;
             taxinvoice.emailSubject = EmailSubject;
 
+            //taxinvoice -> JsonType String
             string PostData = toJsonString(taxinvoice);
 
+            //httppost
+            //return IssueResponse
+            //파라미터 : 사업자번호, Taxinvoice(JsonType String), httpmethod, contenttype, userID
             return httppost<IssueResponse>("/Taxinvoice", CorpNum, PostData, "ISSUE", null, UserID);
         }
 
@@ -693,6 +697,8 @@ namespace Popbill.Taxinvoice
 
         #endregion
 
+        //[DataContract]데이터 직렬화 역직열화를 위해 필요함
+        //.net 3.5 sp1부터는 daacontract 선언 없이도 동작 하지만 안전빵으로 넣은듯
         [DataContract]
         private class IssueRequest
         {
